@@ -12,8 +12,6 @@ public class AutoMapperUserProfile : Profile
 {
     public AutoMapperUserProfile()
     {
-		CreateMap<AddOrEditUserDto, ApiUser>().ForMember(dest => dest.Id, opt => opt.Ignore()).ReverseMap();
-		//CreateMap<AddOrEditUserDto, ApiUser>().ReverseMap();
-
+		CreateMap<AddUserDto, ApiUser>().ReverseMap();
 	}
 }

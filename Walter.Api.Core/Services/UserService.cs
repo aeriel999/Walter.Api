@@ -22,7 +22,7 @@ public class UserService
 	private readonly JwtServise _jwtService;
 	private readonly IMapper _mapper;
 
-	public UserService(JwtServise jwtService, RoleManager<IdentityRole> roleManager, IConfiguration config, 
+	public UserService(JwtServise jwtService, RoleManager<IdentityRole> roleManager, IConfiguration config,
 		UserManager<ApiUser> userManager, SignInManager<ApiUser> signInManager, IMapper mapper)
 	{
 		_userManager = userManager;
@@ -33,20 +33,20 @@ public class UserService
 		_mapper = mapper;
 	}
 	public async Task<ServiceResponse> GetAll()
-    {
-        var users = await _userManager.Users.ToListAsync();
-
-        return new ServiceResponse
-        {
-            Success = true,
-            Message = "Users are loaded",
-            PayLoad = users
-        };
-    }
-
-	public async Task<ServiceResponse> Create(AddOrEditUserDto model)
 	{
-		var user = _mapper.Map<AddOrEditUserDto, ApiUser>(model);
+		var users = await _userManager.Users.ToListAsync();
+
+		return new ServiceResponse
+		{
+			Success = true,
+			Message = "Users are loaded",
+			PayLoad = users
+		};
+	}
+
+	public async Task<ServiceResponse> Create(AddUserDto model)
+	{
+		var user = _mapper.Map<AddUserDto, ApiUser>(model);
 
 		user.UserName = model.Email;
 
@@ -72,9 +72,9 @@ public class UserService
 		}
 	}
 
-	public async Task<ServiceResponse> Edit(AddOrEditUserDto model)
+	public async Task<ServiceResponse> Edit(EditUserDto model)
 	{
-		var user = await _userManager.FindByEmailAsync(model.Email);
+		var user = await _userManager.FindByIdAsync(model.Id);
 
 		if (user == null)
 		{
@@ -84,9 +84,45 @@ public class UserService
 				Message = "User is not found",
 			};
 		}
-		var mappedUser = _mapper.Map<AddOrEditUserDto, ApiUser>(model);
 
-		var result = await _userManager.UpdateAsync(mappedUser);
+		if (user.FirstName != model.FirstName)
+		{
+			user.FirstName = model.FirstName;
+		}
+
+		if (user.LastName != model.LastName)
+		{
+			user.LastName = model.LastName;
+		}
+
+		if (user.Email != model.Email)
+		{
+			user.Email = model.Email;
+			user.EmailConfirmed = false;
+		}
+
+		if (user.PhoneNumber != model.PhoneNumber)
+		{
+			user.PhoneNumber = model.PhoneNumber;
+			user.PhoneNumberConfirmed = false;
+		}
+
+		var role = await _userManager.GetRolesAsync(user);
+
+		if (role == null)
+		{
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "Cant find role of user"
+			};
+		}
+
+		await _userManager.RemoveFromRoleAsync(user, role[0]);
+
+		await _userManager.AddToRoleAsync(user, model.Role);
+
+		var result = await _userManager.UpdateAsync(user);
 
 		if (result.Succeeded)
 		{

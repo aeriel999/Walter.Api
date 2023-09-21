@@ -49,7 +49,7 @@ public class UserController : ControllerBase
 
 
 	[HttpPost("AddUser")]
-	public async Task<IActionResult> AddUser(AddOrEditUserDto model)
+	public async Task<IActionResult> AddUser(AddUserDto model)
 	{
 		var validator = new AddUserValidation();
 
@@ -75,9 +75,9 @@ public class UserController : ControllerBase
 	}
 
 	[HttpPost("EditUser")]
-	public async Task<IActionResult> EditUser(AddOrEditUserDto model)
+	public async Task<IActionResult> EditUser(EditUserDto model)
 	{
-		var validator = new AddUserValidation();
+		var validator = new EditUserValidation();
 
 		var result = validator.Validate(model);
 
