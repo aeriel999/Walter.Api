@@ -36,12 +36,41 @@ public class UserService
 	{
 		var users = await _userManager.Users.ToListAsync();
 
-		return new ServiceResponse
+		if (users == null)
 		{
-			Success = true,
-			Message = "Users are loaded",
-			PayLoad = users
-		};
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "User aren`t loaded",
+			};
+		}
+
+		var mappedUsers = new List<UserDto>();
+
+		foreach (var user in users) 
+		{
+			var newUser = _mapper.Map<ApiUser, UserDto>(user);
+			newUser.Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault(); 
+			mappedUsers.Add(newUser);
+		}
+
+		if (mappedUsers != null)
+		{
+			return new ServiceResponse
+			{
+				Success = true,
+				Message = "Users are loaded",
+				PayLoad = mappedUsers
+			};
+		}
+		else 
+		{
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "User aren`t loaded",
+			};
+		}
 	}
 
 	public async Task<ServiceResponse> Create(AddUserDto model)
@@ -220,6 +249,7 @@ public class UserService
 		}
 
 		var signinResult = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: true, lockoutOnFailure: true);
+
 		if (signinResult.Succeeded)
 		{
 			var tokens = await _jwtService.GenerateJwtTokensAsync(user);
@@ -257,13 +287,119 @@ public class UserService
 		};
 	}
 
-	public async Task LogoutUserAsync()
+	public async Task<ServiceResponse> LogoutUserAsync(string userId)
 	{
+		IEnumerable<RefreshToken> tokens = await _jwtService.GetTokensByUserId(userId);
+
+		foreach (RefreshToken token in tokens) 
+		{
+			await _jwtService.Delete(token);
+		}
+
 		await _signInManager.SignOutAsync();
+
+		return new ServiceResponse
+		{
+			Message = "User Logged out",
+			Success = true
+		};
 	}
 
 	public async Task<ServiceResponse> RefreshTokenAsync(TokenRequestDto model)
 	{
 		return await _jwtService.VerifyTokenAsync(model);
+	}
+
+	public async Task<ServiceResponse> GetUser(string userID)
+	{
+		var user = await _userManager.FindByIdAsync(userID);
+
+		if (user == null)
+		{
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "User is not found",
+			};
+		}
+		 
+		else
+		{
+			var mappedUser = _mapper.Map<ApiUser, UserDto>(user);
+
+			mappedUser.Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
+
+			return new ServiceResponse
+			{
+				Success = true,
+				Message = "User is loaded",
+				PayLoad = mappedUser
+			};
+		}
+	}
+
+	public async Task<ServiceResponse> ValidateUserAsync(ChangePasswordDto model)
+	{
+		var user = await _userManager.FindByIdAsync(model.Id);
+
+		if (user == null)
+		{
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "User not found"
+			};
+		}
+
+		var result = _userManager.CheckPasswordAsync(user, model.Password);
+
+		if (!result.Result)
+		{
+			return new ServiceResponse
+			{
+				Success = false,
+				Message = "Incorrect password"
+			};
+		}
+
+		return new ServiceResponse
+		{
+			Success = true,
+			Message = "Succeeded",
+			PayLoad = user
+		};
+	}
+
+	public async Task<ServiceResponse> UpdatePassword(ChangePasswordDto model)
+	{
+		var result = await ValidateUserAsync(model);
+
+		if (result.Success)
+		{
+			var change = await _userManager.ChangePasswordAsync((ApiUser)result.PayLoad, model.Password, model.NewPassword);
+
+			if (!change.Succeeded)
+			{
+				return new ServiceResponse
+				{
+					Success = false,
+					Message = "Error in password updating"
+				};
+			}
+			else
+			{
+				await _signInManager.SignOutAsync();
+
+				return new ServiceResponse
+				{
+					Success = true,
+					Message = "Password successfully updated"
+				};
+			}
+		}
+		else
+		{
+			return result;
+		}
 	}
 }

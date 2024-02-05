@@ -77,8 +77,8 @@ public class JwtServise : IJwtTokenService
 			Subject = new ClaimsIdentity(new[]
 			{
 				new Claim("Id", user.Id),
-				new Claim("Name", user.FirstName),
-				new Claim("LAstname", user.LastName),
+				new Claim("Name", user.FirstName ?? ""),
+				new Claim("LAstname", user.LastName ?? ""),
 				new Claim("Email", user.Email),
 				new Claim("EmailConfirm", user.EmailConfirmed.ToString()),
 				new Claim("PhoneNumber", user.PhoneNumber ?? ""),
@@ -235,6 +235,13 @@ public class JwtServise : IJwtTokenService
 		var random = new Random();
 		var chars = "qwertyuiopasdfghjklzxcvbnm0987654321";
 		return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
+	}
+
+	public async Task<IEnumerable<RefreshToken>> GetTokensByUserId(string userId)
+	{
+		IEnumerable<RefreshToken> tokens = await _tokenRepo.GetListBySpec(new RefreshTokenSpecification.GetTokensDyUserId(userId));
+
+		return tokens;
 	}
 }
 

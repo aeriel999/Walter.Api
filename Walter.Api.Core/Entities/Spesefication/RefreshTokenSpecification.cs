@@ -17,5 +17,13 @@ public static class RefreshTokenSpecifications
 				Query.Where(t => t.Token == refreshToken);
 			}
 		}
+
+		public class GetTokensDyUserId : Specification<RefreshToken>
+		{
+			public GetTokensDyUserId(string userId)
+			{
+				Query.Where(t => t.UserId == userId);
+			}
+		}
 	}
 }

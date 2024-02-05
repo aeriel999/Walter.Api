@@ -27,7 +27,9 @@ public class UserController : ControllerBase
 	{
 		var result = await _userService.GetAll();
 
-		return Ok(result.PayLoad);
+		if (result.Success)
+			return Ok(result);
+		else return BadRequest(result.Message);
 	}
 
 	[AllowAnonymous]
@@ -38,13 +40,37 @@ public class UserController : ControllerBase
 		return Ok(result);
 	}
 
+	[HttpGet("logout")]
+	public async Task<IActionResult> LogoutUserAsync(string userID)
+	{
+		var result = await _userService.LogoutUserAsync(userID);
+
+		if (result.Success)
+		{
+			return Ok(result);
+		}
+		return BadRequest(result);
+	}
+
+	[HttpGet("GetUser")]
+	public async Task<IActionResult> GetUser(string userID)
+	{
+		var result = await _userService.GetUser(userID);
+
+		if (result.Success)
+		{
+			return Ok(result);
+		}
+		return BadRequest(result);
+	}
+
 	[AllowAnonymous]
 	[HttpPost("RefreshToken")]
 	public async Task<IActionResult> RefreshTokenAsync([FromBody] TokenRequestDto model)
 	{
 		var res = await _userService.RefreshTokenAsync(model);
 
-		return Ok(res);	
+		return Ok(res);
 	}
 
 
@@ -57,20 +83,20 @@ public class UserController : ControllerBase
 
 		if (result.IsValid)
 		{
-			var newUser = await _userService.Create(model);
+			var newUserresult = await _userService.Create(model);
 
-			if (newUser.Success)
+			if (newUserresult.Success)
 			{
-				return Ok(newUser.Message);
+				return Ok(newUserresult);
 			}
 			else
 			{
-				return Problem(newUser.Message);
+				return BadRequest(newUserresult);
 			}
 		}
 		else
 		{
-			return Problem(result.Errors[0].ToString());
+			return BadRequest(result.Errors[0].ToString());
 		}
 	}
 
@@ -87,31 +113,31 @@ public class UserController : ControllerBase
 
 			if (newUser.Success)
 			{
-				return Ok(newUser.Message);
+				return Ok(newUser);
 			}
 			else
 			{
-				return Problem(newUser.Message);
+				return BadRequest(newUser);
 			}
 		}
 		else
 		{
-			return Problem(result.Errors[0].ToString());
+			return BadRequest(result.Errors[0].ToString());
 		}
 	}
 
 	[HttpPost("DeleteUser")]
-	public async Task<IActionResult> DeleteUser(string id)
+	public async Task<IActionResult> DeleteUser([FromBody] string id)
 	{
 		var newUser = await _userService.Delete(id);
 
 		if (newUser.Success)
 		{
-			return Ok(newUser.Message);
+			return Ok(newUser);
 		}
 		else
 		{
-			return Problem(newUser.Message);
+			return BadRequest(newUser);
 		}
 	}
 
@@ -125,7 +151,66 @@ public class UserController : ControllerBase
 			return Ok(result.Message);
 		}
 
-		return Problem(result.Message);
+		return BadRequest(result.Message);
 
 	}
+
+	[HttpPost("UpdateProfile")]
+	public async Task<IActionResult> ProfileUpdate(EditUserDto model)
+	{
+		//if (model.Email == string.Empty)
+		//{
+		//	var validator = new UpdatePasswordValidation();
+
+		//	var validationResult = await validator.ValidateAsync(model);
+
+		//	if (validationResult.IsValid)
+		//	{
+		//		var result = await _userService.UpdatePasswordAsync(model);
+
+		//		if (result.Success)
+		//			return RedirectToAction(nameof(SignIn));
+		//		else
+		//			ViewBag.UpdateInfoError = result.Message;
+		//	}
+		//	else
+		//		ViewBag.UpdateInfoError = validationResult.Errors[0];
+		//}
+		//else
+		//{
+		//	var validator = new EditUserValidation();
+
+		//	var validationResult = await validator.ValidateAsync(model);
+
+		//	if (validationResult.IsValid)
+		//	{
+		//		var result = await _userService.EditUserAsync(model);
+
+		//		if (!result.Success)
+		//			ViewBag.UpdatePasswordError = result.Message;
+		//	}
+		//	else
+		//		ViewBag.UpdatePasswordError = validationResult.Errors[0];
+		//}
+
+		//return View(model);
+
+		return Ok();
+	}
+
+	[HttpPost (("ChangePassword"))]
+	public async Task<IActionResult> ChangePassword(ChangePasswordDto info)
+	{
+		var result = await _userService.UpdatePassword(info);
+
+		if (result.Success)
+		{
+			return Ok(result);
+		}
+
+		return BadRequest(result);
+	}
+
+
+
 }
